@@ -3,6 +3,9 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import FlexSection from "@/components/FlexSection";
+import GallerySection from "@/components/GallerySection";
+import HomeCTA from "@/components/HomeCTA";
 
 export default function Home() {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -12,208 +15,214 @@ export default function Home() {
   const rowARef = useRef<HTMLSpanElement>(null);
   const rowBRef = useRef<HTMLSpanElement>(null);
   const heroImgRef = useRef<HTMLImageElement>(null);
+  const badgeLeftRef = useRef<HTMLDivElement>(null);
+  const badgeMidRef = useRef<HTMLDivElement>(null);
+  const badgeBotRef = useRef<HTMLDivElement>(null);
+  const s1Ref = useRef<HTMLDivElement>(null);
+  const s2Ref = useRef<HTMLDivElement>(null);
+  const s3Ref = useRef<HTMLDivElement>(null);
+  const s4Ref = useRef<HTMLDivElement>(null);
+  const bTLRef = useRef<HTMLDivElement>(null);
+  const bTRRef = useRef<HTMLDivElement>(null);
+  const bBLRef = useRef<HTMLDivElement>(null);
+  const bBRRef = useRef<HTMLDivElement>(null);
+  const bgPlasmaRef = useRef<HTMLDivElement>(null);
+  const scanlinesRef = useRef<HTMLDivElement>(null);
+  const hudYearRef = useRef<HTMLSpanElement>(null);
+  const belowTextRef = useRef<HTMLDivElement>(null);
+  const missionTextRef = useRef<HTMLParagraphElement>(null);
+  const talkButtonRef = useRef<HTMLAnchorElement>(null);
+  const sectionBelowRef = useRef<HTMLDivElement>(null);
+  const bracketsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Reset scroll position on every page mount
+    window.scrollTo(0, 0);
+
     gsap.registerPlugin(ScrollTrigger);
 
-    // ── CURSOR ───────────────────────────────────────────
+    // Guard: ensure all critical refs are present
     const cursor = cursorRef.current;
     const cursorRing = cursorRingRef.current;
-    if (!cursor || !cursorRing) return;
-
-    let mx = 0, my = 0, rx = 0, ry = 0;
-    const onMouseMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-    };
-    window.addEventListener("mousemove", onMouseMove);
-
-    const ticker = () => {
-      rx += (mx - rx) * 0.1;
-      ry += (my - ry) * 0.1;
-      gsap.set(cursor, { x: mx, y: my });
-      gsap.set(cursorRing, { x: rx, y: ry });
-    };
-    gsap.ticker.add(ticker);
-
-    // ── BACKGROUND DRIFT ─────────────────────────────────
     const plasma = plasmaRef.current;
-    if (!plasma) return;
-
-    const bv = {
-      b1x: 20, b1y: 30,
-      b2x: 80, b2y: 15,
-      b3x: 55, b3y: 85,
-      b4x: 10, b4y: 80
-    };
-
-    const plasmaTicker = () => {
-      if (!plasma) return;
-      plasma.style.background = `
-        radial-gradient(ellipse 70% 70% at ${bv.b1x}% ${bv.b1y}%, hsl(239,84%,67%) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 60% at ${bv.b2x}% ${bv.b2y}%, hsl(52,100%,50%)  0%, transparent 55%),
-        radial-gradient(ellipse 65% 65% at ${bv.b3x}% ${bv.b3y}%, hsl(20,100%,55%)  0%, transparent 55%),
-        radial-gradient(ellipse 50% 50% at ${bv.b4x}% ${bv.b4y}%, hsl(185,100%,52%) 0%, transparent 50%),
-        hsl(48,100%,93%)
-      `;
-    };
-    gsap.ticker.add(plasmaTicker);
-
-    gsap.to(bv, {
-      b1x: 40, b1y: 55,
-      b2x: 65, b2y: 35,
-      b3x: 30, b3y: 60,
-      b4x: 85, b4y: 25,
-      duration: 10,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
-
-    // ── FLOATING STARS ────────────────────────────────────
-    ["s1", "s2", "s3", "s4"].forEach((id, i) => {
-      gsap.to("#" + id, {
-        y: -20,
-        rotation: 25 + i * 10,
-        scale: 1.15,
-        duration: 2.5 + i * 0.6,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: i * 0.3
-      });
-    });
-
-    // ── BADGES FLOAT ─────────────────────────────────────
-    ["badgeLeft", "badgeMid", "badgeBot"].forEach((id, i) => {
-      gsap.to("#" + id, {
-        y: -8,
-        duration: 1.8 + i * 0.5,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: i * 0.4
-      });
-    });
-
-    // ── ENTRANCE ANIMATION ───────────────────────────────
     const rowA = rowARef.current;
     const rowB = rowBRef.current;
 
-    gsap.set([rowA, rowB], { yPercent: 105 });
-    gsap.set(["#badgeLeft", "#badgeMid", "#badgeBot"], {
-      opacity: 0,
-      scale: 0.8
-    });
-    gsap.set([".bracket"], { opacity: 0 });
+    if (!cursor || !cursorRing || !plasma || !rowA || !rowB) return;
 
-    const intro = gsap.timeline({ delay: 0.15 });
+    // ── Scoped GSAP context (auto-reverts all tweens/timelines/ScrollTriggers on cleanup)
+    const ctx = gsap.context(() => {
 
-    intro
-      .to(rowA, { yPercent: 0, duration: 0.9, ease: "power3.out" })
-      .to(rowB, { yPercent: 0, duration: 0.9, ease: "power3.out" }, "-=0.65")
-      .to(
-        [".bracket"],
-        { opacity: 1, duration: 0.4, stagger: 0.08, ease: "power2.out" },
-        "-=0.4"
-      )
-      .to(
-        ["#badgeLeft", "#badgeMid", "#badgeBot"],
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.5,
-          stagger: 0.1,
-          ease: "back.out(1.8)"
+      // ── CURSOR ───────────────────────────────────────────
+      let mx = 0, my = 0, rx = 0, ry = 0;
+      const onMouseMove = (e: MouseEvent) => {
+        mx = e.clientX;
+        my = e.clientY;
+      };
+      window.addEventListener("mousemove", onMouseMove);
+
+      const cursorTick = () => {
+        rx += (mx - rx) * 0.1;
+        ry += (my - ry) * 0.1;
+        gsap.set(cursor, { x: mx, y: my });
+        gsap.set(cursorRing, { x: rx, y: ry });
+      };
+      gsap.ticker.add(cursorTick);
+
+      // ── BACKGROUND PLASMA DRIFT ───────────────────────────
+      const bv = { b1x: 20, b1y: 30, b2x: 80, b2y: 15, b3x: 55, b3y: 85, b4x: 10, b4y: 80 };
+
+      const plasmaTick = () => {
+        if (!plasma) return;
+        plasma.style.setProperty('--b1x', bv.b1x + '%');
+        plasma.style.setProperty('--b1y', bv.b1y + '%');
+        plasma.style.setProperty('--b2x', bv.b2x + '%');
+        plasma.style.setProperty('--b2y', bv.b2y + '%');
+        plasma.style.setProperty('--b3x', bv.b3x + '%');
+        plasma.style.setProperty('--b3y', bv.b3y + '%');
+        plasma.style.setProperty('--b4x', bv.b4x + '%');
+        plasma.style.setProperty('--b4y', bv.b4y + '%');
+      };
+      gsap.ticker.add(plasmaTick);
+
+      gsap.to(bv, {
+        b1x: 40, b1y: 55, b2x: 65, b2y: 35, b3x: 30, b3y: 60, b4x: 85, b4y: 25,
+        duration: 10,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+
+      // ── FLOATING STARS (via refs) ─────────────────────────
+      const stars = [s1Ref.current, s2Ref.current, s3Ref.current, s4Ref.current];
+      stars.forEach((el, i) => {
+        if (!el) return;
+        gsap.to(el, {
+          y: -20,
+          rotation: 25 + i * 10,
+          scale: 1.15,
+          duration: 2.5 + i * 0.6,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: i * 0.3,
+        });
+      });
+
+      // ── BADGES FLOAT ─────────────────────────────────────
+      const badges = [badgeLeftRef.current, badgeMidRef.current, badgeBotRef.current];
+      badges.forEach((el, i) => {
+        if (!el) return;
+        gsap.to(el, {
+          y: -8,
+          duration: 1.8 + i * 0.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: i * 0.4,
+        });
+      });
+
+      // ── ENTRANCE ANIMATION ───────────────────────────────
+      const bracketEls = bracketsRef.current
+        ? Array.from(bracketsRef.current.querySelectorAll(".bracket"))
+        : [];
+
+      gsap.set([rowA, rowB], { yPercent: 105 });
+      gsap.set(badges.filter(Boolean), { opacity: 0, scale: 0.8 });
+      gsap.set(bracketEls, { opacity: 0 });
+
+      const intro = gsap.timeline({ delay: 0.15 });
+      intro
+        .to(rowA, { yPercent: 0, duration: 0.9, ease: "power3.out" })
+        .to(rowB, { yPercent: 0, duration: 0.9, ease: "power3.out" }, "-=0.65")
+        .to(bracketEls, { opacity: 1, duration: 0.4, stagger: 0.08, ease: "power2.out" }, "-=0.4")
+        .to(
+          badges.filter(Boolean),
+          { opacity: 1, scale: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.8)" },
+          "-=0.3"
+        );
+
+      // ── SCROLL PIN TIMELINE ──────────────────────────────
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: wrapperRef.current,
+          start: "top top",
+          end: "+=180%",
+          pin: true,
+          scrub: 1,
         },
-        "-=0.3"
-      );
+      });
 
-    // ── SCROLL TIMELINE ────────────────────────────────
-    const tl = gsap.timeline({
-      scrollTrigger: {
+      tl
+        .fromTo(heroImgRef.current,
+          { scale: 1, z: 0 },
+          { scale: 2.2, z: 350, transformOrigin: "center center", ease: "power1.inOut" },
+          0
+        )
+        .fromTo(rowA, { yPercent: 0, opacity: 1 }, { yPercent: -120, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(rowB, { yPercent: 0, opacity: 1 }, { yPercent: 120, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(badgeLeftRef.current, { x: 0, opacity: 1 }, { x: -120, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(badgeMidRef.current, { y: 0, opacity: 1 }, { y: -80, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(badgeBotRef.current, { x: 0, opacity: 1 }, { x: 120, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(s1Ref.current, { x: 0, y: 0, opacity: 1 }, { x: -80, y: -60, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(s2Ref.current, { x: 0, y: 0, opacity: 1 }, { x: -60, y: 80, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(s3Ref.current, { x: 0, y: 0, opacity: 1 }, { x: 80, y: -80, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(s4Ref.current, { x: 0, y: 0, opacity: 1 }, { x: 60, y: 80, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo([bTLRef.current, bBRRef.current], { scale: 1, opacity: 1 }, { scale: 0.5, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo([bTRRef.current, bBLRef.current], { scale: 1, opacity: 1 }, { scale: 0.5, opacity: 0, ease: "power2.in" }, 0)
+        .fromTo(bgPlasmaRef.current, { opacity: 1 }, { opacity: 0, ease: "power2.in" }, 0.3)
+        .fromTo(scanlinesRef.current, { opacity: 0.6 }, { opacity: 1.5, ease: "none" }, 0);
+
+      // ── HUD year counter ─────────────────────────────────
+      ScrollTrigger.create({
         trigger: wrapperRef.current,
         start: "top top",
         end: "+=180%",
-        pin: true,
-        scrub: 1
-      }
-    });
-
-    tl
-      .fromTo(
-        heroImgRef.current,
-        { scale: 1, z: 0 },
-        {
-          scale: 2.2,
-          z: 350,
-          transformOrigin: "center center",
-          ease: "power1.inOut"
+        scrub: true,
+        onUpdate: (self) => {
+          if (hudYearRef.current) {
+            hudYearRef.current.textContent = Math.round(2000 + self.progress * 24).toString();
+          }
         },
-        0
-      )
-      .fromTo(
-        rowA,
-        { yPercent: 0, opacity: 1 },
-        { yPercent: -120, opacity: 0, ease: "power2.in" },
-        0
-      )
-      .fromTo(
-        rowB,
-        { yPercent: 0, opacity: 1 },
-        { yPercent: 120, opacity: 0, ease: "power2.in" },
-        0
-      )
-      .fromTo("#badgeLeft", { x: 0, opacity: 1 }, { x: -120, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#badgeMid", { y: 0, opacity: 1 }, { y: -80, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#badgeBot", { x: 0, opacity: 1 }, { x: 120, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#s1", { x: 0, y: 0, opacity: 1 }, { x: -80, y: -60, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#s2", { x: 0, y: 0, opacity: 1 }, { x: -60, y: 80, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#s3", { x: 0, y: 0, opacity: 1 }, { x: 80, y: -80, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#s4", { x: 0, y: 0, opacity: 1 }, { x: 60, y: 80, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo(["#bTL", "#bBR"], { scale: 1, opacity: 1 }, { scale: 0.5, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo(["#bTR", "#bBL"], { scale: 1, opacity: 1 }, { scale: 0.5, opacity: 0, ease: "power2.in" }, 0)
-      .fromTo("#bgPlasma", { opacity: 1 }, { opacity: 0, ease: "power2.in" }, 0.3)
-      .fromTo(".scanlines", { opacity: 0.6 }, { opacity: 1.5, ease: "none" }, 0);
+      });
 
-    // ── HUD year counter ticks ─────────────────────────
-    const hud = document.getElementById("hudYear");
-    ScrollTrigger.create({
-      trigger: wrapperRef.current,
-      start: "top top",
-      end: "+=180%",
-      scrub: true,
-      onUpdate: (self) => {
-        if (hud) hud.textContent = Math.round(2000 + self.progress * 24).toString();
-      }
+      // ── BELOW section reveal ─────────────────────────────
+      gsap.from(
+        [belowTextRef.current, missionTextRef.current, talkButtonRef.current],
+        {
+          scrollTrigger: {
+            trigger: sectionBelowRef.current,
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+          },
+          opacity: 0,
+          y: 60,
+          duration: 1.2,
+          stagger: 0.3,
+          ease: "power3.out",
+        }
+      );
+
+      // Cleanup event listeners not handled by ctx.revert()
+      return () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        gsap.ticker.remove(cursorTick);
+        gsap.ticker.remove(plasmaTick);
+      };
     });
 
-    // ── BELOW section reveal ───────────────────────────
-    gsap.from(["#belowText", "#missionText", "#talkButton"], {
-      scrollTrigger: {
-        trigger: ".section-below",
-        start: "top 80%",
-        toggleActions: "play none none reverse"
-      },
-      opacity: 0,
-      y: 60,
-      duration: 1.2,
-      stagger: 0.3,
-      ease: "power3.out"
-    });
-
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      gsap.ticker.remove(ticker);
-      gsap.ticker.remove(plasmaTicker);
-      ScrollTrigger.getAll().forEach(st => st.kill());
-    };
+    // ctx.revert() kills all tweens, timelines, and ScrollTriggers created inside the context
+    return () => ctx.revert();
   }, []);
 
   return (
     <div className="home-container">
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&display=swap');
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&display=swap"
+      />
+      <style>{`
 
         :root {
           --indigo: hsl(239, 84%, 67%);
@@ -252,7 +261,7 @@ export default function Home() {
           border: 2px solid var(--yellow);
           border-radius: 50%;
           mix-blend-mode: difference;
-          transition: width 0.25s, height 0.25s;
+          transition: none;
         }
 
         /* ── WRAPPER + PIN ── */
@@ -267,23 +276,12 @@ export default function Home() {
           position: absolute;
           inset: 0;
           z-index: 0;
-          background: radial-gradient(
-              ellipse 70% 70% at 20% 30%,
-              var(--indigo) 0%,
-              transparent 55%
-            ),
-            radial-gradient(
-              ellipse 60% 60% at 80% 15%,
-              var(--yellow) 0%,
-              transparent 55%
-            ),
-            radial-gradient(
-              ellipse 65% 65% at 55% 85%,
-              var(--orange) 0%,
-              transparent 55%
-            ),
-            radial-gradient(ellipse 50% 50% at 10% 85%, var(--cyan) 0%, transparent 50%),
+          background: radial-gradient(ellipse 70% 70% at var(--b1x, 20%) var(--b1y, 30%), var(--indigo) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 60% at var(--b2x, 80%) var(--b2y, 15%), var(--yellow) 0%, transparent 55%),
+            radial-gradient(ellipse 65% 65% at var(--b3x, 55%) var(--b3y, 85%), var(--orange) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 50% at var(--b4x, 10%) var(--b4y, 85%), var(--cyan) 0%, transparent 50%),
             var(--cream);
+          will-change: background;
         }
         .bg-plasma::after {
           content: "";
@@ -557,9 +555,7 @@ export default function Home() {
           transform: translate(50%, -50%);
         }
 
-        .talk-button:hover {
-          color: #fff;
-        }
+        .talk-button:hover { color: #fff; }
 
         .talk-button:hover:before {
           animation: criss-cross-left 0.8s both;
@@ -583,7 +579,6 @@ export default function Home() {
           100% { right: 50%; width: 300%; height: 300%; }
         }
 
-        /* Responsive adjustments */
         @media (max-height: 600px) {
           .brackets { inset: 0.75rem; }
           .bracket { width: 24px; height: 24px; }
@@ -594,71 +589,73 @@ export default function Home() {
         }
       `}</style>
 
-      <div ref={cursorRef} className="cursor" id="cursor"></div>
-      <div ref={cursorRingRef} className="cursor-ring" id="cursorRing"></div>
+      <div ref={cursorRef} className="cursor" />
+      <div ref={cursorRingRef} className="cursor-ring" />
 
       {/* ── PINNED WRAPPER ── */}
-      <div ref={wrapperRef} className="wrapper" id="wrapper">
-        <div ref={plasmaRef} className="bg-plasma" id="bgPlasma"></div>
+      <div ref={wrapperRef} className="wrapper">
+        <div ref={plasmaRef} className="bg-plasma" id="bgPlasma" />
+        <div ref={bgPlasmaRef} style={{ display: "none" }} />
 
-        <div className="image-container" id="imgContainer">
+        <div className="image-container">
           <img
             ref={heroImgRef}
             src="https://images.unsplash.com/photo-1589848315097-ba7b903cc1cc?q=80&w=2070&auto=format&fit=crop"
             alt="hero"
-            id="heroImg"
           />
         </div>
 
-        <div className="scanlines"></div>
+        <div ref={scanlinesRef} className="scanlines" />
 
-        <div className="brackets">
-          <div className="bracket bracket-tl" id="bTL"></div>
-          <div className="bracket bracket-tr" id="bTR"></div>
-          <div className="bracket bracket-bl" id="bBL"></div>
-          <div className="bracket bracket-br" id="bBR"></div>
+        <div ref={bracketsRef} className="brackets">
+          <div ref={bTLRef} className="bracket bracket-tl" />
+          <div ref={bTRRef} className="bracket bracket-tr" />
+          <div ref={bBLRef} className="bracket bracket-bl" />
+          <div ref={bBRRef} className="bracket bracket-br" />
         </div>
 
         <div className="hero-overlay">
-          <div className="hero-title" id="heroTitle">
-            <div className="row"><span ref={rowARef} id="rowA">FUTURE</span></div>
-            <div className="row"><span ref={rowBRef} id="rowB">IS NOW</span></div>
+          <div className="hero-title">
+            <div className="row"><span ref={rowARef}>FUTURE</span></div>
+            <div className="row"><span ref={rowBRef}>IS NOW</span></div>
           </div>
         </div>
 
-        <div className="badge-float" id="badgeLeft" style={{ top: '18%', left: '5%' }}>★ Y2K FOREVER</div>
-        <div className="badge-float indigo-bg" id="badgeMid" style={{ top: '12%', right: '8%' }}>SELECTED WORK</div>
-        <div className="badge-float orange-bg" id="badgeBot" style={{ bottom: '22%', right: '6%' }}>2024 — NOW</div>
+        <div ref={badgeLeftRef} className="badge-float" style={{ top: "18%", left: "5%" }}>★ Y2K FOREVER</div>
+        <div ref={badgeMidRef} className="badge-float indigo-bg" style={{ top: "12%", right: "8%" }}>SELECTED WORK</div>
+        <div ref={badgeBotRef} className="badge-float orange-bg" style={{ bottom: "22%", right: "6%" }}>2024 — NOW</div>
 
-        <div className="deco-star" id="s1" style={{ top: '25%', left: '28%', color: 'var(--indigo)' }}>✦</div>
-        <div className="deco-star" id="s2" style={{ top: '60%', left: '10%', color: 'var(--dark)' }}>★</div>
-        <div className="deco-star" id="s3" style={{ top: '30%', right: '25%', color: 'var(--orange)' }}>✦</div>
-        <div className="deco-star" id="s4" style={{ bottom: '28%', left: '22%', color: 'var(--cyan)' }}>★</div>
-
-
+        <div ref={s1Ref} className="deco-star" style={{ top: "25%", left: "28%", color: "var(--indigo)" }}>✦</div>
+        <div ref={s2Ref} className="deco-star" style={{ top: "60%", left: "10%", color: "var(--dark)" }}>★</div>
+        <div ref={s3Ref} className="deco-star" style={{ top: "30%", right: "25%", color: "var(--orange)" }}>✦</div>
+        <div ref={s4Ref} className="deco-star" style={{ bottom: "28%", left: "22%", color: "var(--cyan)" }}>★</div>
 
         <div className="hud-bar">
           <span className="hud-label">Scroll to enter</span>
-          <div className="hud-line"></div>
-          <span className="hud-label" id="hudYear">2024</span>
+          <div className="hud-line" />
+          <span ref={hudYearRef} className="hud-label">2024</span>
         </div>
       </div>
 
       {/* ── BELOW SECTION ── */}
-      <div className="section-below">
-        <div className="bg-plasma"></div>
+      <div ref={sectionBelowRef} className="section-below">
+        <div className="bg-plasma" />
         <div className="below-content">
-          <div className="below-text" id="belowText">
+          <div ref={belowTextRef} className="below-text">
             THE WORK<em>SPEAKS.</em>
           </div>
-          <p className="mission-statement" id="missionText">
+          <p ref={missionTextRef} className="mission-statement">
             We create brands that make a difference.
           </p>
-          <a href="/contact-us" className="talk-button" id="talkButton">
-            LET'S TALK
+          <a ref={talkButtonRef} href="/contact-us" className="talk-button">
+            LET&apos;S TALK
           </a>
         </div>
       </div>
+
+      <FlexSection />
+      <HomeCTA />
+      {/* <GallerySection /> */}
     </div>
   );
 }

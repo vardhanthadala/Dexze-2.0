@@ -198,7 +198,7 @@ export default function Navbar() {
         <div className="w-full max-w-[1920px] mx-auto px-4 md:px-10 lg:px-20">
           <div className="flex items-center justify-between h-16 lg:h-20">
             <a href="/" className="shrink-0 flex items-center">
-              <Image src="/Asset 6.png" alt="Logo" width={150} height={50} className="h-10 w-auto object-contain" priority />
+              <Image src="/logo.png" alt="Logo" width={150} height={50} className="h-10 w-auto object-contain" priority />
             </a>
 
             <div className="hidden lg:flex items-center gap-8 xl:gap-12">
