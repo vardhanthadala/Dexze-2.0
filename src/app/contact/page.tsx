@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -10,47 +10,46 @@ const ThreeBackground = () => {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        const container = containerRef.current; // snapshot ref for safe cleanup
+        if (!container) return;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        
+
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        containerRef.current.appendChild(renderer.domElement);
+        container.appendChild(renderer.domElement);
 
         // Particles
         const particlesGeometry = new THREE.BufferGeometry();
         const count = 1500;
         const positions = new Float32Array(count * 3);
-
         for (let i = 0; i < count * 3; i++) {
             positions[i] = (Math.random() - 0.5) * 10;
         }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
         const particlesMaterial = new THREE.PointsMaterial({
             size: 0.015,
-            color: '#E05252',
+            color: "#E05252",
             transparent: true,
             opacity: 0.4,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
         });
 
         const particles = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particles);
-
         camera.position.z = 3;
 
+        // ── Cancellable RAF loop ──
+        let rafId: number;
         const animate = () => {
-            requestAnimationFrame(animate);
+            rafId = requestAnimationFrame(animate);
             particles.rotation.y += 0.001;
             particles.rotation.x += 0.0005;
             renderer.render(scene, camera);
         };
-
         animate();
 
         const handleResize = () => {
@@ -58,35 +57,45 @@ const ThreeBackground = () => {
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         };
-
-        window.addEventListener('resize', handleResize);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
-            if (containerRef.current) {
-                containerRef.current.removeChild(renderer.domElement);
+            cancelAnimationFrame(rafId);           // stop the loop first
+            window.removeEventListener("resize", handleResize);
+            if (container.contains(renderer.domElement)) {
+                container.removeChild(renderer.domElement); // safe: uses snapshot, not live ref
             }
-            scene.clear();
+            particles.geometry.dispose();
+            (particles.material as THREE.PointsMaterial).dispose();
             renderer.dispose();
+            scene.clear();
         };
     }, []);
 
-    return <div ref={containerRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, pointerEvents: 'none' }} />;
+    return (
+        <div
+            ref={containerRef}
+            style={{ position: "fixed", top: 0, left: 0, zIndex: 0, pointerEvents: "none" }}
+        />
+    );
 };
 
+// ── MAIN PAGE ──
 export default function ContactBooking() {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [isSent, setIsSent] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    
-    const containerRef = useRef<HTMLDivElement>(null);
+
     const contentRef = useRef<HTMLDivElement>(null);
+    // Ref to keep a stable gsap context for event-handler animations
+    const gsapCtxRef = useRef<gsap.Context | null>(null);
 
     const timeSlots = ["09:00 AM", "10:30 AM", "12:00 PM", "02:00 PM", "03:30 PM", "05:00 PM"];
 
-    // ── GSAP ENTRANCE ANIMATIONS ──
+    // ── Reset scroll & run entrance animations ──
     useEffect(() => {
+        window.scrollTo(0, 0);
         if (!contentRef.current) return;
 
         const ctx = gsap.context(() => {
@@ -95,31 +104,33 @@ export default function ContactBooking() {
                 opacity: 0,
                 duration: 1.2,
                 ease: "power4.out",
-                delay: 0.2
+                delay: 0.2,
             });
-
             gsap.from(".booking-header h1, .booking-header p", {
                 y: 20,
                 opacity: 0,
                 duration: 0.8,
                 stagger: 0.2,
                 ease: "power3.out",
-                delay: 0.6
+                delay: 0.6,
             });
-
             gsap.from(".calendar-section, .form-section", {
                 opacity: 0,
-                x: (i) => i === 0 ? -30 : 30,
+                x: (i: number) => (i === 0 ? -30 : 30),
                 duration: 1,
                 ease: "power3.out",
-                delay: 0.8
+                delay: 0.8,
             });
         }, contentRef);
 
-        return () => ctx.revert();
+        gsapCtxRef.current = ctx;
+        return () => {
+            ctx.revert();
+            gsapCtxRef.current = null;
+        };
     }, []);
 
-    // Calendar Helpers
+    // Calendar helpers
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -132,55 +143,84 @@ export default function ContactBooking() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const handlePrevMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-    };
+    const handlePrevMonth = useCallback(() => {
+        setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1));
+    }, []);
 
-    const handleNextMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-    };
+    const handleNextMonth = useCallback(() => {
+        setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1));
+    }, []);
 
-    const handleDateSelect = (day: number) => {
+    // Scoped slot animation — targets a specific ref, not a global selector
+    const slotsContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleDateSelect = useCallback((day: number) => {
         const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-        if (newDate < today) return;
+        const todayCheck = new Date();
+        todayCheck.setHours(0, 0, 0, 0);
+        if (newDate < todayCheck) return;
         setSelectedDate(newDate);
         setSelectedTime(null);
-        
-        // Quick subtle animation for slot appearance
-        gsap.fromTo(".slots-container", 
-            { opacity: 0, y: 10 }, 
-            { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
-        );
-    };
 
-    const handleSubmit = (e: React.FormEvent) => {
+        // Animate via ref — no global string selector
+        requestAnimationFrame(() => {
+            if (slotsContainerRef.current) {
+                gsap.fromTo(
+                    slotsContainerRef.current,
+                    { opacity: 0, y: 10 },
+                    { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+                );
+            }
+        });
+    }, [currentMonth]);
+
+    const bookingContainerRef = useRef<HTMLDivElement>(null);
+    const contentSplitRef = useRef<HTMLDivElement>(null);
+    const bookingHeaderRef = useRef<HTMLDivElement>(null);
+
+    const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         const form = e.currentTarget as HTMLFormElement;
 
         if (form.checkValidity() && selectedDate && selectedTime) {
-            // Success animation
-            gsap.to(".content-split, .booking-header", {
+            // Success: fade out content then show success state
+            const targets = [contentSplitRef.current, bookingHeaderRef.current].filter(Boolean);
+            gsap.to(targets, {
                 opacity: 0,
                 scale: 0.95,
                 duration: 0.5,
-                onComplete: () => setIsSent(true)
+                onComplete: () => setIsSent(true),
             });
         } else {
-            // Shake animation for error
-            gsap.fromTo(".booking-container", 
-                { x: -10 }, 
-                { x: 10, duration: 0.1, repeat: 4, yoyo: true, ease: "none", onComplete: () => gsap.set(".booking-container", { x: 0 }) }
-            );
+            // Shake error animation via ref
+            if (bookingContainerRef.current) {
+                gsap.fromTo(
+                    bookingContainerRef.current,
+                    { x: -10 },
+                    {
+                        x: 10,
+                        duration: 0.1,
+                        repeat: 4,
+                        yoyo: true,
+                        ease: "none",
+                        onComplete: () => {
+                            if (bookingContainerRef.current) {
+                                gsap.set(bookingContainerRef.current, { x: 0 });
+                            }
+                        },
+                    }
+                );
+            }
         }
-    };
+    }, [selectedDate, selectedTime]);
 
-    const monthName = currentMonth.toLocaleString('default', { month: 'long' });
+    const monthName = currentMonth.toLocaleString("default", { month: "long" });
 
     return (
         <div className="booking-page" ref={contentRef}>
             <ThreeBackground />
-            
-            <style jsx global>{`
+
+            <style>{`
                 .booking-page {
                     min-height: 100vh;
                     background: #050505;
@@ -233,7 +273,6 @@ export default function ContactBooking() {
                     min-height: 500px;
                 }
 
-                /* ── CALENDAR ── */
                 .calendar-section {
                     padding: 40px;
                     background: rgba(18, 18, 18, 0.3);
@@ -310,17 +349,13 @@ export default function ContactBooking() {
                     transform: scale(1.1);
                 }
 
-                .day.disabled {
-                    color: #222;
-                    cursor: not-allowed;
-                }
+                .day.disabled { color: #222; cursor: not-allowed; }
 
                 .day.today {
                     border: 1px solid rgba(224, 82, 82, 0.5);
                     color: #E05252;
                 }
 
-                /* ── TIME SLOTS ── */
                 .slots-container {
                     margin-top: 32px;
                     padding-top: 24px;
@@ -359,7 +394,6 @@ export default function ContactBooking() {
                     box-shadow: 0 4px 15px rgba(224, 82, 82, 0.1);
                 }
 
-                /* ── FORM ── */
                 .form-section {
                     padding: 40px;
                     display: flex;
@@ -367,9 +401,7 @@ export default function ContactBooking() {
                     background: rgba(15, 15, 15, 0.5);
                 }
 
-                .form-group {
-                    margin-bottom: 24px;
-                }
+                .form-group { margin-bottom: 24px; }
 
                 .form-group label {
                     display: block;
@@ -380,12 +412,9 @@ export default function ContactBooking() {
                     text-transform: uppercase;
                     letter-spacing: 0.1em;
                 }
-                .form-group label.required::after {
-                    content: ' *';
-                    color: #E05252;
-                }
+                .form-group label.required::after { content: ' *'; color: #E05252; }
 
-                .form-group input, 
+                .form-group input,
                 .form-group textarea {
                     width: 100%;
                     padding: 16px;
@@ -396,6 +425,8 @@ export default function ContactBooking() {
                     color: #fff;
                     outline: none;
                     transition: all 0.3s;
+                    font-family: inherit;
+                    box-sizing: border-box;
                 }
 
                 .form-group input:focus,
@@ -406,9 +437,7 @@ export default function ContactBooking() {
                 }
 
                 .form-group input::placeholder,
-                .form-group textarea::placeholder {
-                    color: #333;
-                }
+                .form-group textarea::placeholder { color: #333; }
 
                 .submit-btn {
                     width: 100%;
@@ -422,6 +451,9 @@ export default function ContactBooking() {
                     cursor: pointer;
                     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                     margin-top: 10px;
+                    text-decoration: none;
+                    display: inline-block;
+                    text-align: center;
                 }
                 .submit-btn:hover {
                     background: #ff4d4d;
@@ -457,6 +489,11 @@ export default function ContactBooking() {
                     box-shadow: 0 20px 40px rgba(224, 82, 82, 0.3);
                 }
 
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+
                 @media (max-width: 800px) {
                     .content-split { grid-template-columns: 1fr; }
                     .calendar-section { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -468,34 +505,38 @@ export default function ContactBooking() {
                 }
             `}</style>
 
-            <div className="booking-container">
+            <div ref={bookingContainerRef} className="booking-container">
                 {!isSent ? (
                     <>
-                        <div className="booking-header">
+                        <div ref={bookingHeaderRef} className="booking-header">
                             <h1>Book a Session</h1>
-                            <p>Select your ideal slot and let's create something extraordinary.</p>
+                            <p>Select your ideal slot and let&apos;s create something extraordinary.</p>
                         </div>
 
-                        <div className="content-split">
+                        <div ref={contentSplitRef} className="content-split">
                             {/* CALENDAR */}
                             <div className="calendar-section">
                                 <div className="calendar-nav">
                                     <button className="nav-btn" onClick={handlePrevMonth}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <path d="M15 18l-6-6 6-6" />
+                                        </svg>
                                     </button>
                                     <h2>{monthName} {currentMonth.getFullYear()}</h2>
                                     <button className="nav-btn" onClick={handleNextMonth}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <path d="M9 18l6-6-6-6" />
+                                        </svg>
                                     </button>
                                 </div>
 
                                 <div className="calendar-grid">
-                                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                                         <div key={day} className="weekday">{day}</div>
                                     ))}
-                                    
+
                                     {Array.from({ length: firstDay }).map((_, i) => (
-                                        <div key={`empty-${i}`} className="day empty"></div>
+                                        <div key={`empty-${i}`} className="day" />
                                     ))}
 
                                     {Array.from({ length: days }).map((_, i) => {
@@ -506,9 +547,9 @@ export default function ContactBooking() {
                                         const isToday = d.toDateString() === today.toDateString();
 
                                         return (
-                                            <div 
-                                                key={dayNum} 
-                                                className={`day ${isPast ? 'disabled' : ''} ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}`}
+                                            <div
+                                                key={dayNum}
+                                                className={`day ${isPast ? "disabled" : ""} ${isSelected ? "active" : ""} ${isToday ? "today" : ""}`}
                                                 onClick={() => !isPast && handleDateSelect(dayNum)}
                                             >
                                                 {dayNum}
@@ -518,14 +559,14 @@ export default function ContactBooking() {
                                 </div>
 
                                 {selectedDate && (
-                                    <div className="slots-container">
+                                    <div ref={slotsContainerRef} className="slots-container">
                                         <div className="slots-title">Available Times</div>
                                         <div className="slots-grid">
-                                            {timeSlots.map(slot => (
-                                                <button 
+                                            {timeSlots.map((slot) => (
+                                                <button
                                                     key={slot}
                                                     type="button"
-                                                    className={`slot-btn ${selectedTime === slot ? 'active' : ''}`}
+                                                    className={`slot-btn ${selectedTime === slot ? "active" : ""}`}
                                                     onClick={() => setSelectedTime(slot)}
                                                 >
                                                     {slot}
@@ -548,19 +589,25 @@ export default function ContactBooking() {
                                 </div>
                                 <div className="form-group">
                                     <label>Project Brief</label>
-                                    <textarea rows={4} placeholder="What are we building today?" required></textarea>
+                                    <textarea rows={4} placeholder="What are we building today?" required />
                                 </div>
-                                
+
                                 {selectedDate && selectedTime && (
-                                    <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(224, 82, 82, 0.08)', borderRadius: '16px', border: '1px solid rgba(224, 82, 82, 0.2)' }}>
-                                        <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.1em', marginBottom: '6px' }}>Meeting Summary</div>
-                                        <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600 }}>
-                                            {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} @ {selectedTime}
+                                    <div style={{ marginBottom: "20px", padding: "16px", background: "rgba(224, 82, 82, 0.08)", borderRadius: "16px", border: "1px solid rgba(224, 82, 82, 0.2)" }}>
+                                        <div style={{ fontSize: "11px", color: "#666", textTransform: "uppercase", fontWeight: 800, letterSpacing: "0.1em", marginBottom: "6px" }}>
+                                            Meeting Summary
+                                        </div>
+                                        <div style={{ color: "#fff", fontSize: "15px", fontWeight: 600 }}>
+                                            {selectedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} @ {selectedTime}
                                         </div>
                                     </div>
                                 )}
 
-                                <button type="submit" className="submit-btn" disabled={!selectedDate || !selectedTime}>
+                                <button
+                                    type="submit"
+                                    className="submit-btn"
+                                    disabled={!selectedDate || !selectedTime}
+                                >
                                     {!selectedDate ? "Pick a Date" : !selectedTime ? "Pick a Time" : "Confirm Session"}
                                 </button>
                             </form>
@@ -569,13 +616,19 @@ export default function ContactBooking() {
                 ) : (
                     <div className="success-msg">
                         <div className="success-icon">✓</div>
-                        <h1 style={{ fontSize: '32px', color: '#fff', marginBottom: '16px' }}>Session Confirmed!</h1>
-                        <p style={{ color: '#888', marginBottom: '40px', lineHeight: '1.8', fontSize: '18px' }}>
-                            We've reserved your slot for <br/>
-                            <strong style={{ color: '#E05252' }}>{selectedDate?.toLocaleDateString()} at {selectedTime}</strong>.<br/>
+                        <h1 style={{ fontSize: "32px", color: "#fff", marginBottom: "16px" }}>Session Confirmed!</h1>
+                        <p style={{ color: "#888", marginBottom: "40px", lineHeight: "1.8", fontSize: "18px" }}>
+                            We&apos;ve reserved your slot for <br />
+                            <strong style={{ color: "#E05252" }}>
+                                {selectedDate?.toLocaleDateString()} at {selectedTime}
+                            </strong>.<br />
                             Check your inbox for the calendar invite.
                         </p>
-                        <Link href="/" className="submit-btn" style={{ textDecoration: 'none', display: 'inline-block', width: 'auto', padding: '16px 48px' }}>
+                        <Link
+                            href="/"
+                            className="submit-btn"
+                            style={{ textDecoration: "none", display: "inline-block", width: "auto", padding: "16px 48px" }}
+                        >
                             Explore More
                         </Link>
                     </div>

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Courgette&family=Roboto&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -16,4 +17,129 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'PP Neue Montreal', Arial, sans-serif;
+}
+.clip-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+/* Fonts */
+
+/* Typography */
+p {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+blockquote {
+  position: relative;
+  padding-left: 1.5rem;
+  font-family: 'Courgette', serif;
+  font-size: 2rem;
+  line-height: 1.25;
+}
+
+blockquote::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: #A9DFBF;
+  border-radius: 60px;
+}
+
+/* HERO SYSTEM (IMPORTANT) */
+
+.hero {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.hero-inner {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  clip: rect(0, auto, auto, 0);
+}
+
+/* Fix for modern browsers */
+@supports (-webkit-overflow-scrolling: touch) {
+  .hero-inner {
+    clip: unset;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+  }
+}
+
+.hero-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Title */
+.hero-title {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courgette', serif;
+  font-size: 8vw;
+  color: white;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+/* CONTENT */
+
+.content::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: white;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.content-title {
+  font-family: 'Courgette', serif;
+  font-size: 3rem;
+  text-align: center;
+}
+
+.content-author {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courgette', serif;
+  font-size: 1.5rem;
+  margin: 2rem 0;
+}
+
+.content-author::before,
+.content-author::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: #A9DFBF;
+}
+
+.content-author::before {
+  margin-right: 1rem;
+}
+
+.content-author::after {
+  margin-left: 1rem;
 }

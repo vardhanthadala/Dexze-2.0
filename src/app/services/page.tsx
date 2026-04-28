@@ -1,358 +1,681 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, FC } from "react";
 
-export default function ServicesPage() {
-  const [modalOpen, setModalOpen] = useState(false);
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface HeroSection {
+  headline: string;
+  image: string;
+  id: string;
+}
+
+
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const HEROES: HeroSection[] = [
+  {
+    headline: "",
+    image: "https://images.unsplash.com/photo-1455849318743-b2233052fcff?auto=format&fit=crop&w=1920&q=80",
+    id: "section-0",
+  },
+  {
+    headline: "Full Stack Web & App Developmenr",
+    image: "https://plus.unsplash.com/premium_photo-1685086785636-2a1a0e5b591f?auto=format&fit=crop&w=1920&q=80",
+    id: "section-1",
+  },
+  {
+    headline: "UI & UX Design ",
+    image: "https://images.unsplash.com/photo-1586717799252-bd134ad00e26?auto=format&fit=crop&w=1920&q=80",
+    id: "section-2",
+  },
+  {
+    headline: "Digital Marketing ",
+    image: "https://plus.unsplash.com/premium_photo-1684225764999-3597a8da10ab?auto=format&fit=crop&w=1920&q=80",
+    id: "section-3",
+  },
+  {
+    headline: "Branding & Creatives",
+    image: "https://images.unsplash.com/photo-1416339134316-0e91dc9ded92?auto=format&fit=crop&w=1920&q=80",
+    id: "section-4",
+  },
+];
+
+
+
+// ─── Hero Section Component ───────────────────────────────────────────────────
+// Uses CSS clip trick for fixed-within-section parallax (same as original)
+const HeroSection: FC<{ hero: HeroSection; index: number }> = ({ hero, index }) => {
   return (
-    <main className="services-page">
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&display=swap");
+    <section
+      className="relative w-full"
+      style={{ height: "100vh" }}
+    >
+      {/*
+        .hero-inner equivalent:
+        overflow:hidden + clip:rect(0,auto,auto,0) confines the fixed figure
+        so each hero's background only shows within its own viewport slice.
+      */}
+      <div
+        id={hero.id}
+        className="absolute inset-0 overflow-hidden"
+        style={{
+          clip: "rect(0, auto, auto, 0)",
+          // iOS Safari fallback
+          WebkitClipPath: "polygon(0 0, 100% 0, 100% 100%, 0% 100%)",
+        }}
+      >
+        {/* Fixed background image — stays put while you scroll through this section */}
+        <figure
+          className="fixed inset-0 w-full h-full m-0 p-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url('${hero.image}')` }}
+          aria-hidden="true"
+        >
+          {/* Dark overlay for text legibility */}
+          <div className="absolute inset-0 bg-black/35" />
+        </figure>
 
-        .services-page {
-          background-color: #111827; /* gray-900 */
-          min-height: 100vh;
+        {/* Headline — also fixed within this clipped container */}
+        <h2
+          className="fixed inset-0 flex items-center justify-center text-center text-white px-4 z-10 select-none"
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "clamp(2.5rem, 8vw, 6rem)",
+            letterSpacing: "-0.05em",
+            lineHeight: 1.1,
+            textShadow: "0 2px 32px rgba(0,0,0,0.45)",
+          }}
+        >
+          {hero.headline}
+        </h2>
+      </div>
+    </section>
+  );
+};
+
+// ─── Content Section ─────────────────────────────────────────────────────────
+const ContentSection: FC = () => {
+  return (
+    <section
+      className="relative bg-white z-10"
+      style={{ marginBottom: "8rem" }}
+    >
+      {/*
+        Inverted triangle clip — white wedge that "peels up" from the last hero.
+        Matches the original .content:before clip-path triangle.
+      */}
+      <div
+        aria-hidden="true"
+        className="absolute left-0 right-0 bg-white z-10"
+        style={{
+          top: "-100px",
+          height: "100px",
+          clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
+        }}
+      />
+
+      {/* Article body */}
+      <article className="relative z-20 mx-auto max-w-[1200px] px-8 pt-4 pb-24">
+        <style>{`
+          .reveal-text {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #111;
+            letter-spacing: -0.03em;
+            font-weight: 700;
+          }
+
+          .reveal-text span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: reveal-letter 0.5s forwards;
+          }
+
+          @keyframes reveal-letter {
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .flip-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            justify-items: center;
+            padding-top: 2rem;
+          }
+
+          .flip-card {
+            background-color: transparent;
+            width: 100%;
+            max-width: 320px;
+            height: 440px;
+            perspective: 1000px;
+            font-family: 'DM Sans', sans-serif;
+          }
+
+          .title {
+            font-size: 1.6em;
+            font-weight: 800;
+            text-align: center;
+            margin: 0;
+            letter-spacing: -0.02em;
+            z-index: 2;
+          }
+
+          .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+          }
+
+          .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+          }
+
+          /* Shining Glint Effect */
+          .flip-card-front::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+              120deg,
+              transparent,
+              rgba(255, 255, 255, 0.3),
+              transparent
+            );
+            transition: all 0.6s ease;
+            z-index: 5;
+          }
+
+          .flip-card:hover .flip-card-front::after {
+            left: 150%;
+          }
+
+          .flip-card-front,
+          .flip-card-back {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1.2rem;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+          }
+
+          .flip-card:hover .flip-card-front,
+          .flip-card:hover .flip-card-back {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+          }
+
+          .flip-card-front {
+            background: #fff;
+            color: #fff;
+            justify-content: flex-end;
+            padding: 2rem;
+            border: 1px solid #f0f0f0;
+          }
+
+          .card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+
+          .flip-card:hover .card-bg {
+            transform: scale(1.15);
+          }
+
+          .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
+            z-index: 1;
+          }
+
+          .flip-card-back {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f4f2 100%);
+            color: #1a1a1a;
+            transform: rotateY(180deg);
+            padding: 2.5rem;
+            justify-content: center;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+          }
+
+          .flip-card-back .title {
+            text-align: left;
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: #2d5a41;
+            font-weight: 800;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.5s ease 0.2s;
+          }
+
+          .flip-card:hover .flip-card-back .title {
+            transform: translateY(0);
+            opacity: 1;
+          }
+
+          .service-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+
+          .service-list li {
+            font-size: 0.95rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            color: #444;
+            font-weight: 500;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.4s ease;
+          }
+
+          .flip-card:hover .service-list li {
+            transform: translateY(0);
+            opacity: 1;
+          }
+
+          /* Staggered animation for list items */
+          .flip-card:hover .service-list li:nth-child(1) { transition-delay: 0.3s; }
+          .flip-card:hover .service-list li:nth-child(2) { transition-delay: 0.4s; }
+          .flip-card:hover .service-list li:nth-child(3) { transition-delay: 0.5s; }
+          .flip-card:hover .service-list li:nth-child(4) { transition-delay: 0.6s; }
+          .flip-card:hover .service-list li:nth-child(5) { transition-delay: 0.7s; }
+
+          .service-list li::before {
+            content: "•";
+            color: #A9DFBF;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+            margin-right: 10px;
+          }
+        `}</style>
+
+        <h2 className="reveal-text">
+          {"Services we provide".split("").map((char, i) => (
+            <span key={i} style={{ animationDelay: `${i * 0.05}s` }}>
+              {char === " " ? "\u00A0" : char}
+            </span>
+          ))}
+        </h2>
+
+        <div className="flip-card-grid">
+          {[
+            {
+              t: "Branding & Design",
+              bg: "/services/brandind-services.png",
+              list: ["Branding", "Graphic Design", "UI UX Design", "Creative Design", "Collateral Design"]
+            },
+            {
+              t: "Digital Marketing",
+              bg: "/services/digitalMarketing-services.png",
+              list: ["Social Media Management", "PPC Campaigns", "SEO", "Content Marketing", "Email Marketing"]
+            },
+            {
+              t: "Back-End Dev & More",
+              bg: "/services/fullstack-services.png",
+              list: ["Web App's", "Mobile App's", "Photography", "Video & Production", "OOH"]
+            },
+            {
+              t: "UI / UX Design",
+              bg: "/services/uiux-services.png",
+              list: ["User Research", "Wireframing", "Prototyping", "Visual Design", "Usability Testing"]
+            },
+            {
+              t: "Fullstack Solutions",
+              bg: "/services/fullstack-services.png",
+              list: ["Architecture", "Scalability", "API Integration", "Cloud Services", "Performance"]
+            },
+            {
+              t: "Strategy & Creative",
+              bg: "/services/brandind-services.png",
+              list: ["Brand Voice", "Market Analysis", "Campaign Strategy", "Content Plan", "Art Direction"]
+            },
+            {
+              t: "Growth Marketing",
+              bg: "/services/digitalMarketing-services.png",
+              list: ["Lead Generation", "Funnel Optimization", "Analytics", "A/B Testing", "Conversion Rate"]
+            },
+            {
+              t: "Mobile Engineering",
+              bg: "/services/fullstack-services.png",
+              list: ["iOS Development", "Android Development", "React Native", "Flutter", "App Store Optimization"]
+            },
+            {
+              t: "Product Design",
+              bg: "/services/uiux-services.png",
+              list: ["Product Strategy", "Design Systems", "Interaction Design", "Motion Graphics", "Accessibility"]
+            }
+          ].map((card, i) => (
+            <div key={i} className="flip-card">
+              <div className="flip-card-inner">
+                <div className="flip-card-front">
+                  <div className="card-bg" style={{ backgroundImage: `url(${card.bg})` }} />
+                  <div className="card-overlay" />
+                  <p className="title">{card.t}</p>
+                </div>
+                <div className="flip-card-back">
+                  <p className="title">{card.t}</p>
+                  <ul className="service-list">
+                    {card.list.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </article>
+    </section>
+  );
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function ServicesPage() {
+  useEffect(() => {
+    const id = "services-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;500&family=Fjalla+One&display=swap";
+    document.head.appendChild(link);
+    return () => {
+      document.getElementById(id)?.remove();
+    };
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { overflow-x: hidden; }
+      `}</style>
+
+      <main>
+        {HEROES.map((hero, index) => (
+          <HeroSection key={hero.id} hero={hero} index={index} />
+        ))}
+        <ContentSection />
+        <CTASection />
+      </main>
+    </>
+  );
+}
+
+// ─── CTA Section ─────────────────────────────────────────────────────────────
+const CTASection: FC = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const animatedHeadline = (text: string, baseColor: string, hoverColor: string) => (
+    <div className={`retro-headline ${isVisible ? 'visible' : ''}`} style={{ color: baseColor }}>
+      {text.split("").map((char, i) => (
+        <span 
+          key={i} 
+          className="letter" 
+          style={{ 
+            transitionDelay: `${i * 0.03}s`,
+            '--hover-color': hoverColor 
+          } as any}
+        >
+          {char === " " ? "\u00A0" : char}
+        </span>
+      ))}
+    </div>
+  );
+
+  return (
+    <section 
+      ref={sectionRef}
+      className="relative w-full min-h-[70vh] bg-[#050505] flex flex-col md:flex-row items-center px-8 md:px-24 py-32 overflow-hidden gap-12"
+    >
+      <style>{`
+        .retro-headline {
+          font-family: 'Fjalla One', sans-serif;
+          font-size: clamp(2.2rem, 5.5vw, 4.5rem);
+          text-transform: uppercase;
+          line-height: 1.1;
+          margin-bottom: 0.2rem;
+          transform: rotate(-10deg);
+          display: flex;
+          flex-wrap: wrap;
         }
 
-        h2 {
-          font-family: "Playfair Display", serif;
-          font-optical-sizing: auto;
-          font-weight: 400;
-          font-style: normal;
+        .letter {
+          display: block;
+          transform: skew(-10deg) translateY(80px);
+          opacity: 0;
+          transition: 
+            transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), 
+            opacity 0.7s ease,
+            color 0.3s ease;
+          text-shadow: 
+            #533d4a 1px 1px, 
+            #533d4a 2px 2px, 
+            #533d4a 3px 3px, 
+            #533d4a 4px 4px;
+          cursor: default;
         }
 
-        .card {
-          position: relative;
-          overflow: hidden;
-          background-color: #1f2937; /* gray-800 */
-          padding: 2.5rem; /* p-10 */
-          transition: box-shadow 0.6s;
-          z-index: 1;
+        .visible .letter {
+          transform: skew(-10deg) translateY(0);
+          opacity: 1;
         }
 
-        .card::before {
-          position: absolute;
-          content: "";
-          width: 100%;
-          height: 100%;
-          transition: 0.6s;
-          z-index: 0;
-          background-color: #4f46e5;
-        }
-
-        .card:hover {
-          box-shadow: 0.063rem 0.063rem 1.25rem 0.375rem rgb(0 0 0 / 53%);
-        }
-
-        .card:nth-child(1)::before {
-          bottom: 0;
-          right: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 100% 100%);
-        }
-
-        .card:nth-child(2)::before {
-          bottom: 0;
-          left: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 0% 100%);
-        }
-
-        .card:nth-child(3)::before {
-          top: 0;
-          right: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 100% 0%);
-        }
-
-        .card:nth-child(4)::before {
-          top: 0;
-          left: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 0% 0%);
-        }
-
-        .card p, .card ul {
-          transition: 0.8s;
-          position: relative;
+        .letter:hover {
+          color: var(--hover-color) !important;
+          transform: skew(-10deg) scale(1.1) translateY(-10px) !important;
           z-index: 10;
         }
 
-        .card:hover::before {
-          clip-path: circle(110vw at 100% 100%);
-        }
-
-        .card:hover p, .card:hover li {
-          color: #fff;
-        }
-
-        .circle {
-          display: none;
-        }
-
-        @media (min-width: 62.5rem) {
-          .circle {
-            display: block;
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-          }
-        }
-
-        .card:nth-child(1) .circle {
-          background: url("https://images.unsplash.com/photo-1587440871875-191322ee64b0?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
-            no-repeat 50% 50% / cover;
-          bottom: 0;
-          right: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 100% 100%);
-        }
-
-        .card:nth-child(2) .circle {
-          background: url("https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
-            no-repeat 50% 50% / cover;
-          bottom: 0;
-          left: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 0% 100%);
-        }
-        
-        .card:nth-child(3) .circle {
-          background: url("https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
-            no-repeat 50% 50% / cover;
-          top: 0;
-          right: 0;
-          clip-path: circle(calc(6.25rem + 7.5vw) at 100% 0%);
-        }
-
-        /* Startup Section Styles */
-        @import url(https://fonts.googleapis.com/css?family=Alegreya+Sans:300,400);
-
-        .startup-header {
-          background-image: linear-gradient(to bottom, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 1) 100%), url(https://i.imgur.com/HS5coix.jpg);
-          background-size: cover;
-          background-position: center;
-          text-align: center;
-          padding: 6rem 1rem 4rem;
-          min-height: 70vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .startup-header h1 {
-          margin: 0;
-          padding: 0 0 0.5em;
-          /* Matching Section 2 sizes: text-4xl md:text-5xl xl:text-6xl */
-          font-size: clamp(2.5rem, 8vw, 4.5rem); 
-          color: #fff;
-          font-weight: 700;
-          line-height: 1.1;
-          max-width: 1000px;
-          font-family: "Alegreya Sans", sans-serif;
-          letter-spacing: -0.02em;
-        }
-
-        .startup-header h1 span {
-          display: block;
-          font-size: 0.45em;
-          font-weight: 400;
-          letter-spacing: 0.1em;
-          color: #6366f1; /* indigo-500 */
-          text-transform: uppercase;
-          margin-bottom: 1rem;
-        }
-
-        .startup-header button.invite {
-          display: inline-block;
-          margin-top: 1rem;
-          padding: 0.75em 2em;
-          font-size: 1.25rem;
-          color: #fff;
-          font-weight: 400;
-          background: rgba(255,255,255,0.1);
-          backdrop-filter: blur(4px);
-          border: #fff 2px solid;
-          border-radius: 9999px;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Alegreya Sans", sans-serif;
-        }
-
-        .startup-header button.invite:hover {
-          background: #fff;
-          color: #111;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        .wrap {
-          margin: 4em auto;
-          max-width: 1100px;
-          padding: 0 1.5rem;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 3rem;
-        }
-
-        .grid-startup {
-          text-align: center;
-          color: white;
-          padding: 1rem;
-        }
-
-        .grid-startup h2 {
-          font-family: "Playfair Display", serif;
-          /* Matching card headings: text-2xl xl:text-3xl */
-          font-size: clamp(1.5rem, 4vw, 1.875rem);
-          margin-bottom: 1rem;
-          color: #fff;
-        }
-
-        .grid-startup p {
-          font-family: "Alegreya Sans", sans-serif;
-          font-weight: 300;
-          font-size: 1.15rem;
-          line-height: 1.6;
-          color: #9ca3af; /* text-gray-400 */
-        }
-
-        .modal-custom {
-          padding: 2.5rem;
-          width: calc(100% - 2rem);
-          max-width: 550px;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -45%) scale(0.95);
-          background: #fff;
-          border-radius: 2rem;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .cta-image-reveal {
           opacity: 0;
-          visibility: hidden;
-          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-          z-index: 1000;
-          color: #111;
-          text-align: left;
+          transform: scale(0.95) translateX(20px);
+          transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
         }
-
-        .modal--init {
-          visibility: visible;
+        .cta-image-reveal.visible {
           opacity: 1;
-          transform: translate(-50%, -50%) scale(1);
+          transform: scale(1) translateX(0);
         }
-
-        .modal-custom h3 { 
-          margin-top: 0; 
-          color: #4f46e5; 
-          font-size: 1.5rem;
-          line-height: 1.3;
-          font-family: "Alegreya Sans", sans-serif;
-        }
-
-        .modal-custom p {
-          color: #4b5563;
-          margin-bottom: 1.5rem;
-          font-size: 1rem;
-          line-height: 1.6;
-        }
-
-        .modal-custom a { color: #4f46e5; text-decoration: underline; font-weight: 500; }
-
-        .modal-custom .x { 
-          display: inline-block;
-          margin-top: 1rem;
-          color: #9ca3af;
-          font-weight: 600;
-          text-transform: uppercase;
-          font-size: 0.75rem;
-          letter-spacing: 0.1em;
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-
-        .modal-custom .x:hover { color: #111; }
-
-        /* Marquee Styles */
-        .marquee-container {
-          background: #ffffff;
-          overflow: hidden;
-          padding: 1.25rem 0;
-          display: flex;
-          align-items: center;
-          border-top: 1px solid rgba(0,0,0,0.1);
-          border-bottom: 1px solid rgba(0,0,0,0.1);
-          position: relative;
-          z-index: 50;
-        }
-
-        .marquee-content {
-          display: flex;
-          white-space: nowrap;
-          animation: marquee-scroll 30s linear infinite;
-        }
-
-        .marquee-item {
-          font-family: "Alegreya Sans", sans-serif;
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: #000000;
-          text-transform: uppercase;
-          padding-right: 4rem;
-          letter-spacing: 0.05em;
-        }
-
-        @keyframes marquee-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-
       `}</style>
 
-      {/*section - 1 */}
-      <header className="startup-header">
-        <h1><span>An app you didn't know you needed</span> SIMPLIFIED.</h1>
-        <button className="invite" onClick={() => setModalOpen(true)}>Request Invite</button>
-      </header>
+      {/* Content Column */}
+      <div className="relative z-10 w-full md:w-1/2 flex flex-col items-start pt-12">
+        {animatedHeadline("We Engineer", "#fff", "#e55643")}
+        {animatedHeadline("High Performance", "#fff", "#2b9f5e")}
+        {animatedHeadline("Transform Brands", "#fff", "#f1c83c")}
 
-      <div className="wrap">
-        <div className="grid-startup">
-          <h2>Fast</h2>
-          <p>A revolutionary way to enhance your day-to-day life, quickly.</p>
-        </div>
-        
-        <div className="grid-startup">
-          <h2>Easy</h2>
-          <p>Everything you do, do it with gracious ease. Easily.</p>
-        </div>
-        
-        <div className="grid-startup">
-          <h2>Reliable</h2>
-          <p>Reliably rely on our service that's built on reliability.</p>
+        {/* Animated CTA Button */}
+        <div className={`mt-20 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} style={{ transitionDelay: '1s' }}>
+          <style>{`
+            .custom-btn {
+              --primary: #A9DFBF;
+              --neutral-1: #ffffff;
+              --neutral-2: #f0f0f0;
+              --radius: 34px;
+              cursor: pointer;
+              border-radius: var(--radius);
+              text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+              border: none;
+              box-shadow: 0 0.5px 0.5px 1px rgba(255, 255, 255, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.2), 0 4px 5px 0px rgba(0, 0, 0, 0.05);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+              transition: all 0.3s ease;
+              min-width: 240px;
+              padding: 12px 30px;
+              height: 68px;
+              font-family: inherit;
+              font-size: 18px;
+              font-weight: 700;
+              background: #fff;
+              color: #000;
+            }
+
+            .custom-btn:hover {
+              transform: scale(1.05);
+              box-shadow: 0 0 1px 2px rgba(169, 223, 191, 0.3),
+                0 15px 30px rgba(0, 0, 0, 0.3);
+            }
+
+            .custom-btn:active {
+              transform: scale(0.98);
+            }
+
+            .custom-btn::after {
+              content: "";
+              position: absolute;
+              inset: 0;
+              border-radius: var(--radius);
+              border: 2px solid transparent;
+              background: linear-gradient(var(--neutral-1), var(--neutral-2)) padding-box,
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.2)) border-box;
+              z-index: 0;
+              transition: all 0.4s ease;
+            }
+
+            .custom-btn .state {
+              z-index: 5;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 12px;
+            }
+
+            .custom-btn .icon {
+              transition: all 0.3s ease;
+            }
+
+            .custom-btn:hover .icon {
+              transform: rotate(15deg) scale(1.2);
+              color: var(--primary);
+            }
+
+            .letter-span {
+              display: inline-block;
+              transition: all 0.3s ease;
+            }
+
+            .custom-btn:hover .letter-span {
+              animation: wave-effect 0.5s ease forwards calc(var(--i) * 0.03s);
+            }
+
+            @keyframes wave-effect {
+              0% { transform: translateY(0); }
+              50% { transform: translateY(-5px); color: var(--primary); }
+              100% { transform: translateY(0); }
+            }
+
+            .btn-outline {
+              position: absolute;
+              inset: -3px;
+              border-radius: inherit;
+              overflow: hidden;
+              z-index: 1;
+              opacity: 0;
+              transition: opacity 0.4s ease;
+            }
+
+            .custom-btn:hover .btn-outline {
+              opacity: 1;
+            }
+
+            .btn-outline::before {
+              content: "";
+              position: absolute;
+              inset: -100%;
+              background: conic-gradient(from 180deg, transparent 60%, #A9DFBF 80%, transparent 100%);
+              animation: spin-anim 2s linear infinite;
+            }
+
+            @keyframes spin-anim {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+          
+          <button className="custom-btn group">
+            <div className="btn-outline"></div>
+            <div className="state state--default">
+              <div className="icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </div>
+              <p className="flex">
+                {"Start a Project".split("").map((char, i) => (
+                  <span key={i} className="letter-span" style={{ "--i": i } as any}>
+                    {char === " " ? "\u00A0" : char}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </button>
         </div>
       </div>
 
-      <div className={`modal-custom ${modalOpen ? 'modal--init' : ''}`}>
-        <h3>Ha! You don't get an invite. You think we'd let you use our service that easily?</h3>
-        <p>
-          Just kidding. I think these startups are awesome and I'd love to launch my own one day. It's still fun to pick on them, though.
-        </p>
-        <p>
-          If you found this amusing please <a href="https://www.mattboldt.com" target="_blank" rel="noopener noreferrer">see my blog</a> where I do other cool things.
-        </p>
-        <a href="#" className="x" onClick={(e) => { e.preventDefault(); setModalOpen(false); }}>exit</a>
+      {/* Image Column - Themed Retro Engineering Image */}
+      <div className={`relative w-full md:w-1/2 h-[300px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl cta-image-reveal ${isVisible ? 'visible' : ''}`} style={{ transitionDelay: '0.8s' }}>
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-110"
+          style={{ 
+            backgroundImage: "url('https://images.unsplash.com/photo-1581092583537-20d51b4b4f1b?auto=format&fit=crop&w=1000&q=80')",
+            filter: "sepia(0.2) contrast(1.2) brightness(0.8)"
+          }}
+        />
+        {/* Subtle overlay to blend with the retro theme */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#050505]/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 border border-white/5 rounded-2xl pointer-events-none" />
       </div>
-        {/*section - 1 end*/}
 
-      {/* Marquee Section */}
-      <div className="marquee-container">
-        <div className="marquee-content">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="marquee-item">
-              CREATIVE DESIGN • DIGITAL STRATEGY • AI SOLUTIONS • BRANDING • DEVELOPMENT • MOTION GRAPHICS •
-            </span>
-          ))}
-        </div>
-      </div>
-      
-
-    </main>
+      {/* Grain texture overlay */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]" />
+    </section>
   );
-}
+};
