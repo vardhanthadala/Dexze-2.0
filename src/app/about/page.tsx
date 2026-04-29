@@ -584,73 +584,14 @@ const TimelineItem: FC<{ milestone: Milestone; index: number; total: number }> =
 };
 
 // ─── Testimonial Carousel ─────────────────────────────────────────────────────
-const TestimonialSection: FC = () => {
-  const [active, setActive] = useState(0);
 
-  useEffect(() => {
-    const id = setInterval(() => setActive((p) => (p + 1) % TESTIMONIALS.length), 5000);
-    return () => clearInterval(id);
-  }, []);
 
-  return (
-    <section className="py-32 px-6 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="max-w-4xl mx-auto text-center">
-        <RevealSection>
-          <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase">What clients say</span>
-          <h2 className="mt-3 text-4xl md:text-5xl font-bold text-gray-900 tracking-tight font-display">
-            Trusted by builders
-          </h2>
-        </RevealSection>
-
-        <div className="mt-16 relative min-h-[240px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.97 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-3xl p-10 shadow-sm border border-gray-100"
-            >
-              {/* Stars */}
-              <div className="flex justify-center gap-1 mb-6">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-amber-400 text-lg">★</span>
-                ))}
-              </div>
-              <blockquote className="text-xl md:text-2xl text-gray-700 leading-relaxed font-medium tracking-tight">
-                "{TESTIMONIALS[active].quote}"
-              </blockquote>
-              <div className="mt-8 flex items-center justify-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">
-                  {TESTIMONIALS[active].initials}
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{TESTIMONIALS[active].author}</p>
-                  <p className="text-xs text-gray-400">{TESTIMONIALS[active].company}</p>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Dots */}
-          <div className="flex justify-center gap-2 mt-8">
-            {TESTIMONIALS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                aria-label={`Testimonial ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === active ? "w-8 bg-indigo-500" : "w-1.5 bg-gray-200 hover:bg-gray-300"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
+import AboutHero from "./AboutHero";
+import WhoWeAre from "./WhoWeAre";
+import BlogSlider from "./BlogSlider";
+import TeamSection from "./TeamSection";
+import TimelineSection from "./TimelineSection";
+import TestimonialsSection from "./TestimonialsSection";
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AboutPage() {
@@ -664,241 +605,23 @@ export default function AboutPage() {
   return (
     <main className="bg-[#fafafa] antialiased overflow-x-hidden">
 
-      {/* ── Custom font injection (no next/font needed) ── */}
+      {/* ── Custom font injection ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,700&display=swap');
         .font-display { font-family: 'Sora', sans-serif; }
         body, * { font-family: 'DM Sans', sans-serif; }
       `}</style>
 
       {/* ══════════════════════════════════════════════════════════
-          HERO
+          HERO (Replaced with new high-performance hero)
       ══════════════════════════════════════════════════════════ */}
-      <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#f0f2ff] via-white to-[#fafafa]">
-        {/* Three.js canvas */}
-        <div className="absolute inset-0 pointer-events-none">
-          <HeroCanvas />
-        </div>
+      <AboutHero />
 
-        {/* Soft radial glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(99,102,241,0.07) 0%, transparent 70%)",
-          }}
-        />
-
-        {/* Grain texture */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.025]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: "160px",
-          }}
-        />
-
-        {/* Foreground content */}
-        <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full bg-white border border-indigo-100 shadow-sm text-xs font-semibold text-indigo-500 tracking-wide uppercase"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            Our story
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="font-display font-bold text-gray-900 tracking-tight"
-            style={{ fontSize: "clamp(3rem, 8vw, 7rem)", lineHeight: 1.04 }}
-          >
-            We build what
-            <br />
-            <span
-              style={{
-                backgroundImage: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              others imagine.
-            </span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.26, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-6 text-base md:text-lg text-gray-500 max-w-xl leading-relaxed"
-          >
-            A design-engineering studio crafting products people actually want to use.
-            Precision, craft, and velocity — all three, always.
-          </motion.p>
-
-          {/* CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-10 flex flex-col sm:flex-row items-center gap-4"
-          >
-            <motion.button
-              whileHover={{ scale: 1.04, boxShadow: "0 16px 48px rgba(99,102,241,0.3)" }}
-              whileTap={{ scale: 0.97 }}
-              onClick={scrollDown}
-              className="px-8 py-3.5 rounded-full bg-indigo-600 text-white text-sm font-semibold shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
-            >
-              Explore more ↓
-            </motion.button>
-            <motion.a
-              whileHover={{ x: 4 }}
-              href="#contact"
-              className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-2"
-            >
-              Start a project →
-            </motion.a>
-          </motion.div>
-        </div>
-
-        {/* Scroll cue */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-300 cursor-pointer"
-          onClick={scrollDown}
-        >
-          <span className="text-xs tracking-widest uppercase">scroll</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-            className="w-px h-8 bg-gradient-to-b from-gray-300 to-transparent"
-          />
-        </motion.div>
-      </section>
 
       {/* ══════════════════════════════════════════════════════════
-          STATS BAR
+          WHO WE ARE (New interactive section)
       ══════════════════════════════════════════════════════════ */}
-      <section
-        ref={statsRef}
-        className="py-20 px-6 bg-gradient-to-b from-[#fafafa] to-white"
-      >
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {STATS.map((stat, i) => (
-            <StatCard key={stat.label} stat={stat} index={i} active={statsInView} />
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          ABOUT
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 bg-white">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          {/* Text */}
-          <div>
-            <RevealSection>
-              <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase">Who we are</span>
-              <h2 className="mt-3 text-4xl md:text-5xl font-bold text-gray-900 tracking-tight font-display leading-tight">
-                A studio obsessed
-                <br />with craft.
-              </h2>
-            </RevealSection>
-            <RevealSection delay={0.12} className="mt-6">
-              <p className="text-gray-500 leading-relaxed text-base">
-                We started in 2019 with a simple thesis: most software is boring because
-                the teams building it stopped caring about the people using it. We care deeply.
-              </p>
-              <p className="mt-4 text-gray-500 leading-relaxed text-base">
-                Our mission is to make complex products feel effortless — and effortless
-                products feel inevitable. We partner with startups and growth-stage companies
-                to design, build, and launch.
-              </p>
-              <p className="mt-4 text-gray-500 leading-relaxed text-base">
-                <strong className="text-gray-900 font-medium">Our vision:</strong> a world where
-                every product interaction respects and delights the people behind the screen.
-              </p>
-            </RevealSection>
-
-            <RevealSection delay={0.2} className="mt-8">
-              <motion.a
-                whileHover={{ x: 6 }}
-                href="#"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Read our story →
-              </motion.a>
-            </RevealSection>
-          </div>
-
-          {/* Visual */}
-          <RevealSection delay={0.1} className="relative">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className="relative rounded-3xl overflow-hidden shadow-2xl shadow-indigo-100 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 aspect-[4/3] flex items-center justify-center"
-            >
-              {/* Decorative illustration placeholder */}
-              <div className="relative w-full h-full flex items-center justify-center p-10">
-                {/* Abstract geometric composition */}
-                <svg viewBox="0 0 400 300" className="w-full h-full opacity-80" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.1" />
-                    </linearGradient>
-                    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#ec4899" stopOpacity="0.1" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="200" cy="150" r="120" fill="url(#g1)" />
-                  <circle cx="280" cy="100" r="70" fill="url(#g2)" />
-                  <rect x="60" y="80" width="100" height="100" rx="24" fill="#6366f1" fillOpacity="0.12" transform="rotate(-15 110 130)" />
-                  <rect x="240" y="160" width="80" height="80" rx="18" fill="#8b5cf6" fillOpacity="0.15" transform="rotate(20 280 200)" />
-                  <circle cx="100" cy="200" r="30" fill="#ec4899" fillOpacity="0.1" />
-                  <circle cx="320" cy="220" r="20" fill="#6366f1" fillOpacity="0.15" />
-                  {/* Grid dots */}
-                  {[...Array(8)].map((_, col) =>
-                    [...Array(5)].map((_, row) => (
-                      <circle
-                        key={`${col}-${row}`}
-                        cx={40 + col * 48}
-                        cy={40 + row * 56}
-                        r="2"
-                        fill="#6366f1"
-                        fillOpacity="0.15"
-                      />
-                    ))
-                  )}
-                </svg>
-              </div>
-            </motion.div>
-            {/* Floating badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, type: "spring" }}
-              className="absolute -bottom-4 -left-4 bg-white rounded-2xl px-5 py-3 shadow-lg border border-gray-100 flex items-center gap-3"
-            >
-              <span className="text-2xl">🏆</span>
-              <div>
-                <p className="text-xs font-bold text-gray-900">Top Studio 2024</p>
-                <p className="text-xs text-gray-400">Dribbble × Awwwards</p>
-              </div>
-            </motion.div>
-          </RevealSection>
-        </div>
-      </section>
+      <WhoWeAre />
 
       {/* ══════════════════════════════════════════════════════════
           VALUES
@@ -914,57 +637,27 @@ export default function AboutPage() {
               Not posted in a Notion doc nobody reads. These shape every decision, every day.
             </p>
           </RevealSection>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {VALUES.map((card, i) => (
-              <ValueCardItem key={card.title} card={card} index={i} />
-            ))}
-          </div>
+          
+          <BlogSlider />
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
           TEAM
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <RevealSection className="text-center mb-16">
-            <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase">The people</span>
-            <h2 className="mt-3 text-4xl md:text-5xl font-bold text-gray-900 tracking-tight font-display">
-              Meet the team
-            </h2>
-            <p className="mt-4 text-base text-gray-500 max-w-md mx-auto">
-              Small on headcount, enormous on output. Every person here is a craftsperson.
-            </p>
-          </RevealSection>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {TEAM.map((member, i) => (
-              <TeamCard key={member.name} member={member} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <div style={{ background: '#171717' }}>
+        <TeamSection />
+      </div>
 
       {/* ══════════════════════════════════════════════════════════
           TIMELINE
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 bg-[#fafafa]">
-        <div className="max-w-3xl mx-auto">
-          <RevealSection className="text-center mb-20">
-            <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase">How we got here</span>
-            <h2 className="mt-3 text-4xl md:text-5xl font-bold text-gray-900 tracking-tight font-display">
-              Our journey
-            </h2>
-          </RevealSection>
-          {TIMELINE.map((m, i) => (
-            <TimelineItem key={m.year} milestone={m} index={i} total={TIMELINE.length} />
-          ))}
-        </div>
-      </section>
+      <TimelineSection />
 
       {/* ══════════════════════════════════════════════════════════
           TESTIMONIALS
       ══════════════════════════════════════════════════════════ */}
-      <TestimonialSection />
+      <TestimonialsSection />
 
       {/* ══════════════════════════════════════════════════════════
           CTA
@@ -1021,30 +714,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════════════════════ */}
-      <footer className="bg-white border-t border-gray-100 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-indigo-600 block" />
-            <span className="font-display font-bold text-gray-900 text-sm tracking-tight">Studio</span>
-          </div>
-          <p className="text-xs text-gray-400">© {new Date().getFullYear()} Studio. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            {["Twitter", "LinkedIn", "Dribbble"].map((link) => (
-              <a
-                key={link}
-                href="#"
-                className="text-xs text-gray-400 hover:text-gray-900 transition-colors"
-                aria-label={link}
-              >
-                {link}
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
+  
     </main>
   );
 }
