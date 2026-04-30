@@ -434,7 +434,7 @@ export default function FlexSection() {
                 {slides.map((slide, i) => (
                     <div
                         key={i}
-                        ref={(el) => (slidesRef.current[i] = el)}
+                        ref={(el) => { slidesRef.current[i] = el; }}
                         onMouseEnter={() => handleEnter(i)}
                         className="flex-slide"
                     >
