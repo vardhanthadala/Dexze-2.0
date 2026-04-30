@@ -287,14 +287,17 @@ export default function EliteCTA() {
 
       const spans = headingRef.current?.querySelectorAll("span");
 
-      tl.to(spans, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        stagger: 0.05,
-        ease: "power3.out",
-      })
-      .fromTo(
+      if (spans) {
+        tl.to(spans, {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.05,
+          ease: "power3.out",
+        });
+      }
+      
+      tl.fromTo(
         subRef.current,
         { opacity: 0, y: 20 },
         { opacity: 1, y: 0, duration: 0.6 },
